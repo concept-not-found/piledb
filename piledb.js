@@ -27,7 +27,7 @@ PileClient.prototype.putData = function(key, value, callback) {
     if (!keyWasSet) {
       return callback(new Error(key + ' was already set'));
     }
-    callback();
+    return callback();
   });
 };
 
@@ -50,13 +50,14 @@ PileClient.prototype.getData = function(key, callback) {
         }
         return callback(new Error(key + ' was not set'));
       });
+    } else {
+      return callback(undefined, value);
     }
-    callback(undefined, value);
   });
 };
 
 PileClient.prototype.putReference = function(name, key, callback) {
-  this.redisClient.LPUSH(this.referenceKey(name), key, callback);
+  return this.redisClient.LPUSH(this.referenceKey(name), key, callback);
 };
 
 PileClient.prototype.getReference = function(name, callback) {
@@ -72,7 +73,7 @@ PileClient.prototype.getReference = function(name, callback) {
 };
 
 PileClient.prototype.getReferenceHistory = function(name, callback) {
-  this.redisClient.LRANGE(this.referenceKey(name), 0, -1, callback);
+  return this.redisClient.LRANGE(this.referenceKey(name), 0, -1, callback);
 };
 
 PileClient.prototype.redactData = function(key, reason, callback) {
@@ -85,12 +86,12 @@ PileClient.prototype.redactData = function(key, reason, callback) {
     if (err) {
       return callback(err);
     }
-    _this.redisClient.SET(_this.dataKey(key), undefined, callback);
+    return _this.redisClient.SET(_this.dataKey(key), undefined, callback);
   });
 };
 
 PileClient.prototype.getRedactions = function(callback) {
-  this.redisClient.LRANGE(this.redactionKey(), 0, -1, callback);
+  return this.redisClient.LRANGE(this.redactionKey(), 0, -1, callback);
 };
 
 module.exports = PileClient;

@@ -4,7 +4,7 @@ var expect = require('chai').expect;
 
 describe('pile client', function() {
   describe('put data', function() {
-    it('should only put a value for a key', function(done) {
+    it('should put a value for a key', function(done) {
       var fakeRedis = new FakeRedis();
       var db = new PileClient(fakeRedis);
 
@@ -29,7 +29,7 @@ describe('pile client', function() {
       })
     });
 
-    it('should propagate errors', function(done) {
+    it('should propagate errors from SETNX', function(done) {
       var alwaysFailingSETNX = {
         SETNX: function(key, value, callback) {
           return callback(new Error('oops'));
@@ -45,6 +45,42 @@ describe('pile client', function() {
   });
 
   describe('get data', function() {
+    it('should get a value for a key that exists', function(done) {
+      var fakeRedis = new FakeRedis();
+      fakeRedis.storage['piledb:data:fred'] = 'yogurt';
+      var db = new PileClient(fakeRedis);
 
+      db.getData('fred', function(err, value) {
+        expect(err).to.be.undefined;
+        expect(value).to.equal('yogurt');
+        done();
+      });
+    });
+
+    it('should returns an error for a key that does not exists', function(done) {
+      var fakeRedis = new FakeRedis();
+      var db = new PileClient(fakeRedis);
+
+      db.getData('fred', function(err, value) {
+        expect(err).to.be.an.instanceof(Error);
+        expect(value).to.be.undefined;
+        done();
+      });
+    });
+
+    it('should propagate errors from GET', function(done) {
+      var alwaysFailingGET = {
+        GET: function(key, callback) {
+          return callback(new Error('oops'));
+        }
+      };
+      var db = new PileClient(alwaysFailingGET);
+
+      db.getData('fred', function(err, value) {
+        expect(err).to.be.an.instanceof(Error);
+        expect(value).to.be.undefined;
+        done();
+      });
+    });
   });
 });
