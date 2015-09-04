@@ -1,6 +1,6 @@
 function PileClient(redisClient, namespace) {
   this.redisClient = redisClient;
-  this.namespace = namespace || 'piledb';
+  this.namespace = namespace || 'PileClient';
 }
 
 PileClient.prototype.internalKey = function(key) {
