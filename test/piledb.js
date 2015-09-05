@@ -18,15 +18,13 @@ describe('pile client', function() {
 
     it('should only put a key once', function(done) {
       var fakeRedis = new FakeRedis();
+      fakeRedis.storage['piledb:data:fred'] = 'yogurt';
       var db = new PileClient(fakeRedis);
 
-      db.putData('fred', 'yogurt', function(err) {
-        expect(err).to.be.undefined;
-        db.putData('fred', 'yogurt', function(err) {
-          expect(err).to.be.an.instanceof(Error);
-          done();
-        });
-      })
+      db.putData('fred', 'ice cream', function(err) {
+        expect(err).to.be.an.instanceof(Error);
+        done();
+      });
     });
 
     it('should propagate errors from SETNX', function(done) {
@@ -84,15 +82,28 @@ describe('pile client', function() {
     });
   });
 
-  describe('put reference', function() {
-    it('should put a key for a name', function(done) {
+  describe('add reference', function() {
+    it('should add a key for a new name', function(done) {
       var fakeRedis = new FakeRedis();
       var db = new PileClient(fakeRedis);
 
-      db.putReference('captain', 'fred', function(err) {
+      db.addReference('captain', 'fred', function(err) {
         expect(err).to.be.undefined;
         expect(fakeRedis.storage).to.include.keys('piledb:reference:captain');
         expect(fakeRedis.storage['piledb:reference:captain']).to.eql(['fred']);
+        done();
+      });
+    });
+
+    it('should add a key for an existing name', function(done) {
+      var fakeRedis = new FakeRedis();
+      fakeRedis.storage['piledb:reference:captain'] = ['fred'];
+      var db = new PileClient(fakeRedis);
+
+      db.addReference('captain', 'bob', function(err) {
+        expect(err).to.be.undefined;
+        expect(fakeRedis.storage).to.include.keys('piledb:reference:captain');
+        expect(fakeRedis.storage['piledb:reference:captain']).to.eql(['fred', 'bob']);
         done();
       });
     });
@@ -105,7 +116,7 @@ describe('pile client', function() {
       };
       var db = new PileClient(alwaysFailingLPUSH);
 
-      db.putReference('captain', 'fred', function(err) {
+      db.addReference('captain', 'fred', function(err) {
         expect(err).to.be.an.instanceof(Error);
         done();
       });

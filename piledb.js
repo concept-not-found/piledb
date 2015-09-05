@@ -56,11 +56,11 @@ PileClient.prototype.getData = function(key, callback) {
   });
 };
 
-PileClient.prototype.putReference = function(name, key, callback) {
+PileClient.prototype.addReference = function(name, key, callback) {
   return this.redisClient.LPUSH(this.referenceKey(name), key, callback);
 };
 
-PileClient.prototype.getReference = function(name, callback) {
+PileClient.prototype.getLastReference = function(name, callback) {
   this.redisClient.LRANGE(this.referenceKey(name), -1, -1, function(err, latest) {
     if (err) {
       return callback(err);
