@@ -54,8 +54,7 @@ PileClient.prototype.putData = function(key, value, callback) {
 
 PileClient.prototype.getData = function(key, callback) {
   var _this = this;
-  var dataKey = this.dataKey(key);
-  this.redisClient.GET(dataKey, function(err, value) {
+  this.redisClient.GET(this.dataKey(key), function(err, value) {
     if (err) {
       return callback(err);
     }
@@ -65,7 +64,7 @@ PileClient.prototype.getData = function(key, callback) {
           return callback(err);
         }
         for (var i = 0; i < redactions.length; i++) {
-          if (redactions[i].key === dataKey) {
+          if (redactions[i].key === key) {
             return callback(new PileClient.RedactedDataError(redactions[i]));
           }
         }

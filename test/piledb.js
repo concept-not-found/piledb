@@ -66,6 +66,21 @@ describe('pile client', function() {
       });
     });
 
+    it('should fail for a key that has been redacted', function(done) {
+      var fakeRedis = new FakeRedis();
+      fakeRedis.storage['piledb:redaction'] = [{
+        key: 'fred',
+        reason: 'court order 156'
+      }];
+      var db = new PileClient(fakeRedis);
+
+      db.getData('fred', function(err, value) {
+        expect(err).to.be.an.instanceof(PileClient.RedactedDataError);
+        expect(value).to.be.undefined;
+        done();
+      });
+    });
+
     it('should propagate errors from GET', function(done) {
       var alwaysFailingGET = {
         GET: function(key, callback) {
