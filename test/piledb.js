@@ -276,4 +276,49 @@ describe('pile client', function() {
       });
     });
   });
+
+  describe('get redactions', function() {
+    it('should get all redactions when there are some', function(done) {
+      var fakeRedis = new FakeRedis();
+      fakeRedis.storage['piledb:redaction'] = [{
+        key: 'fred',
+        reason: 'court order 156'
+      }];
+      var db = new PileClient(fakeRedis);
+
+      db.getRedactions(function(err, redactions) {
+        expect(err).to.be.undefined;
+        expect(redactions).to.eql([{
+          key: 'fred',
+          reason: 'court order 156'
+        }]);
+        done();
+      });
+    });
+
+    it('should get empty there are no redactions', function(done) {
+      var fakeRedis = new FakeRedis();
+      var db = new PileClient(fakeRedis);
+
+      db.getRedactions(function(err, redactions) {
+        expect(err).to.be.undefined;
+        expect(redactions).to.eql([]);
+        done();
+      });
+    });
+
+    it('should propagate errors from LRANGE', function(done) {
+      var alwaysFailingLRANGE = {
+        LRANGE: function(key, start, end, callback) {
+          return callback(new Error('oops'));
+        }
+      };
+      var db = new PileClient(alwaysFailingLRANGE);
+
+      db.getRedactions(function(err) {
+        expect(err).to.be.an.instanceof(Error);
+        done();
+      });
+    });
+  });
 });
