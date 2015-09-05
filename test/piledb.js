@@ -22,7 +22,7 @@ describe('pile client', function() {
       var db = new PileClient(fakeRedis);
 
       db.putData('fred', 'ice cream', function(err) {
-        expect(err).to.be.an.instanceof(Error);
+        expect(err).to.be.an.instanceof(PileClient.AlreadySetError);
         done();
       });
     });
@@ -60,7 +60,7 @@ describe('pile client', function() {
       var db = new PileClient(fakeRedis);
 
       db.getData('fred', function(err, value) {
-        expect(err).to.be.an.instanceof(Error);
+        expect(err).to.be.an.instanceof(PileClient.NotFoundError);
         expect(value).to.be.undefined;
         done();
       });
@@ -141,7 +141,7 @@ describe('pile client', function() {
       var db = new PileClient(fakeRedis);
 
       db.getLastReference('captain', function(err, key) {
-        expect(err).to.be.an.instanceof(Error);
+        expect(err).to.be.an.instanceof(PileClient.NotFoundError);
         expect(key).to.be.undefined;
         done();
       });
@@ -237,7 +237,7 @@ describe('pile client', function() {
       var db = new PileClient(fakeRedis);
 
       db.redactData('fred', 'court order 156', function(err) {
-        expect(err).to.be.an.instanceof(Error);
+        expect(err).to.be.an.instanceof(PileClient.NotFoundError);
         done();
       });
     });

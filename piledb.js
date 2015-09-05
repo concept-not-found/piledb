@@ -3,6 +3,27 @@ function PileClient(redisClient, namespace) {
   this.namespace = namespace || 'piledb';
 }
 
+PileClient.AlreadySetError = function(key) {
+  this.constructor.prototype.__proto__ = Error.prototype;
+  Error.captureStackTrace(this, this.constructor);
+  this.name = this.constructor.name;
+  this.message = key + ' was already set';
+};
+
+PileClient.NotFoundError = function(key) {
+  this.constructor.prototype.__proto__ = Error.prototype;
+  Error.captureStackTrace(this, this.constructor);
+  this.name = this.constructor.name;
+  this.message = key + ' was not set';
+};
+
+PileClient.RedactedDataError = function(redaction) {
+  this.constructor.prototype.__proto__ = Error.prototype;
+  Error.captureStackTrace(this, this.constructor);
+  this.name = this.constructor.name;
+  this.message = redaction.key + ' was redacted: ' + redaction.reason;
+};
+
 PileClient.prototype.internalKey = function(key) {
   return this.namespace + ':' + key;
 };
@@ -25,7 +46,7 @@ PileClient.prototype.putData = function(key, value, callback) {
       return callback(err);
     }
     if (!keyWasSet) {
-      return callback(new Error(key + ' was already set'));
+      return callback(new PileClient.AlreadySetError(key));
     }
     return callback();
   });
@@ -45,10 +66,10 @@ PileClient.prototype.getData = function(key, callback) {
         }
         for (var i = 0; i < redactions.length; i++) {
           if (redactions[i].key === dataKey) {
-            return callback(new Error(key + ' was redacted: ' + redactions[i].reason));
+            return callback(new PileClient.RedactedDataError(redactions[i]));
           }
         }
-        return callback(new Error(key + ' was not set'));
+        return callback(new PileClient.NotFoundError(key));
       });
     } else {
       return callback(undefined, value);
@@ -66,7 +87,7 @@ PileClient.prototype.getLastReference = function(name, callback) {
       return callback(err);
     }
     if (!latest || latest.length === 0) {
-      return callback(new Error(name + ' was not set'));
+      return callback(new PileClient.NotFoundError(name));
     }
     return callback(undefined, latest[0]);
   });
@@ -83,7 +104,7 @@ PileClient.prototype.redactData = function(key, reason, callback) {
       return callback(err);
     }
     if (!keyExists) {
-      return callback(new Error(key + ' does not exist'));
+      return callback(new PileClient.NotFoundError(key));
     }
 
     var redactionLog = {
