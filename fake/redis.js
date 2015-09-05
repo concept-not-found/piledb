@@ -10,6 +10,11 @@ FakeRedis.prototype.SETNX = function(key, value, callback) {
   return callback(undefined, true);
 };
 
+FakeRedis.prototype.DEL = function(key, callback) {
+  delete this.storage[key];
+  return callback(undefined);
+};
+
 FakeRedis.prototype.GET = function(key, callback) {
   return callback(undefined, this.storage[key]);
 };

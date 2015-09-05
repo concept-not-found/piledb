@@ -84,9 +84,14 @@ PileClient.prototype.redactData = function(key, reason, callback) {
   };
   this.redisClient.LPUSH(this.redactionKey(), redactionLog, function(err) {
     if (err) {
-      return callback(err);
+      return callback(new Error('failed to log redaction, data not deleted: ' + err.message));
     }
-    return _this.redisClient.SET(_this.dataKey(key), undefined, callback);
+    return _this.redisClient.DEL(_this.dataKey(key), function(err) {
+      if (err) {
+        return callback(new Error('failed to delete redacted data.  left dirty redaction log: ' + err.message));
+      }
+      return callback();
+    });
   });
 };
 

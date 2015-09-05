@@ -202,4 +202,78 @@ describe('pile client', function() {
       });
     });
   });
+
+  describe('redact data', function() {
+    it('should redact data that exists', function(done) {
+      var fakeRedis = new FakeRedis();
+      fakeRedis.storage['piledb:data:fred'] = 'yogurt';
+      var db = new PileClient(fakeRedis);
+
+      db.redactData('fred', 'court order 156', function(err) {
+        expect(err).to.be.undefined;
+        expect(fakeRedis.storage).to.not.include.keys('piledb:data:fred');
+        done();
+      });
+    });
+
+    it('should add a redaction when redacting data that exists', function(done) {
+      var fakeRedis = new FakeRedis();
+      fakeRedis.storage['piledb:data:fred'] = 'yogurt';
+      var db = new PileClient(fakeRedis);
+
+      db.redactData('fred', 'court order 156', function(err) {
+        expect(err).to.be.undefined;
+        expect(fakeRedis.storage).to.include.keys('piledb:redaction');
+        expect(fakeRedis.storage['piledb:redaction']).to.eql([{
+          key: 'fred',
+          reason: 'court order 156'
+        }]);
+        done();
+      });
+    });
+
+    it('should add a redaction when redacting data that exists', function(done) {
+      var fakeRedis = new FakeRedis();
+      fakeRedis.storage['piledb:data:fred'] = 'yogurt';
+      var db = new PileClient(fakeRedis);
+
+      db.redactData('fred', 'court order 156', function(err) {
+        expect(err).to.be.undefined;
+        expect(fakeRedis.storage).to.include.keys('piledb:redaction');
+        expect(fakeRedis.storage['piledb:redaction']).to.eql([{
+          key: 'fred',
+          reason: 'court order 156'
+        }]);
+        done();
+      });
+    });
+
+    it('should propagate errors from LPUSH', function(done) {
+      var alwaysFailingLPUSH = {
+        LPUSH: function(key, value, callback) {
+          return callback(new Error('oops'));
+        }
+      };
+      var db = new PileClient(alwaysFailingLPUSH);
+
+      db.redactData('fred', 'court order 156', function(err) {
+        expect(err).to.be.an.instanceof(Error);
+        done();
+      });
+    });
+
+    it('should propagate errors from DEL', function(done) {
+      var fakeRedis = new FakeRedis();
+      fakeRedis.storage['piledb:data:fred'] = 'yogurt';
+      fakeRedis.DEL = function(key, callback) {
+        return callback(new Error('oops'));
+      };
+      var db = new PileClient(fakeRedis);
+
+      db.redactData('fred', 'court order 156', function(err) {
+        expect(err).to.be.an.instanceof(Error);
+        done();
+      });
+    });
+  });
 });
