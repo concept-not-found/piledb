@@ -162,4 +162,44 @@ describe('pile client', function() {
       });
     });
   });
+
+  describe('get reference history', function() {
+    it('should get all keys for a name that exists', function(done) {
+      var fakeRedis = new FakeRedis();
+      fakeRedis.storage['piledb:reference:captain'] = ['fred', 'bob'];
+      var db = new PileClient(fakeRedis);
+
+      db.getReferenceHistory('captain', function(err, key) {
+        expect(err).to.be.undefined;
+        expect(key).to.eql(['fred', 'bob']);
+        done();
+      });
+    });
+
+    it('should get empty when name does not exist', function(done) {
+      var fakeRedis = new FakeRedis();
+      var db = new PileClient(fakeRedis);
+
+      db.getReferenceHistory('captain', function(err, key) {
+        expect(err).to.be.undefined;
+        expect(key).to.eql([]);
+        done();
+      });
+    });
+
+    it('should propagate errors from LRANGE', function(done) {
+      var alwaysFailingLRANGE = {
+        LRANGE: function(key, start, end, callback) {
+          return callback(new Error('oops'));
+        }
+      };
+      var db = new PileClient(alwaysFailingLRANGE);
+
+      db.getReferenceHistory('captain', function(err, key) {
+        expect(err).to.be.an.instanceof(Error);
+        expect(key).to.be.undefined;
+        done();
+      });
+    });
+  });
 });
