@@ -78,19 +78,28 @@ PileClient.prototype.getReferenceHistory = function(name, callback) {
 
 PileClient.prototype.redactData = function(key, reason, callback) {
   var _this = this;
-  var redactionLog = {
-    key: key,
-    reason: reason
-  };
-  this.redisClient.LPUSH(this.redactionKey(), redactionLog, function(err) {
+  this.redisClient.EXISTS(this.dataKey(key), function(err, keyExists) {
     if (err) {
-      return callback(new Error('failed to log redaction, data not deleted: ' + err.message));
+      return callback(err);
     }
-    return _this.redisClient.DEL(_this.dataKey(key), function(err) {
+    if (!keyExists) {
+      return callback(new Error(key + ' does not exist'));
+    }
+
+    var redactionLog = {
+      key: key,
+      reason: reason
+    };
+    _this.redisClient.LPUSH(_this.redactionKey(), redactionLog, function(err) {
       if (err) {
-        return callback(new Error('failed to delete redacted data.  left dirty redaction log: ' + err.message));
+        return callback(new Error('failed to log redaction, data not deleted: ' + err.message));
       }
-      return callback();
+      return _this.redisClient.DEL(_this.dataKey(key), function(err) {
+        if (err) {
+          return callback(new Error('failed to delete redacted data.  left dirty redaction log: ' + err.message));
+        }
+        return callback();
+      });
     });
   });
 };

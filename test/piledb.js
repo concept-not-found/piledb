@@ -232,29 +232,37 @@ describe('pile client', function() {
       });
     });
 
-    it('should add a redaction when redacting data that exists', function(done) {
+    it('should fail when data does not exist', function(done) {
       var fakeRedis = new FakeRedis();
-      fakeRedis.storage['piledb:data:fred'] = 'yogurt';
       var db = new PileClient(fakeRedis);
 
       db.redactData('fred', 'court order 156', function(err) {
-        expect(err).to.be.undefined;
-        expect(fakeRedis.storage).to.include.keys('piledb:redaction');
-        expect(fakeRedis.storage['piledb:redaction']).to.eql([{
-          key: 'fred',
-          reason: 'court order 156'
-        }]);
+        expect(err).to.be.an.instanceof(Error);
+        done();
+      });
+    });
+
+    it('should propagate errors from EXISTS', function(done) {
+      var alwaysFailingEXISTS = {
+        EXISTS: function(key, callback) {
+          return callback(new Error('oops'));
+        }
+      };
+      var db = new PileClient(alwaysFailingEXISTS);
+
+      db.redactData('fred', 'court order 156', function(err) {
+        expect(err).to.be.an.instanceof(Error);
         done();
       });
     });
 
     it('should propagate errors from LPUSH', function(done) {
-      var alwaysFailingLPUSH = {
-        LPUSH: function(key, value, callback) {
-          return callback(new Error('oops'));
-        }
+      var fakeRedis = new FakeRedis();
+      fakeRedis.storage['piledb:data:fred'] = 'yogurt';
+      fakeRedis.LPUSH = function(key, value, callback) {
+        return callback(new Error('oops'));
       };
-      var db = new PileClient(alwaysFailingLPUSH);
+      var db = new PileClient(fakeRedis);
 
       db.redactData('fred', 'court order 156', function(err) {
         expect(err).to.be.an.instanceof(Error);

@@ -19,6 +19,10 @@ FakeRedis.prototype.GET = function(key, callback) {
   return callback(undefined, this.storage[key]);
 };
 
+FakeRedis.prototype.EXISTS = function(key, callback) {
+  return callback(undefined, this.storage[key] ? 1 : 0);
+};
+
 FakeRedis.prototype.LRANGE = function(key, start, end, callback) {
   if (!this.storage[key]) {
     return callback(undefined, []);
