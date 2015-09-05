@@ -55,7 +55,7 @@ describe('pile client', function() {
       });
     });
 
-    it('should returns an error for a key that does not exists', function(done) {
+    it('should fail for a key that does not exists', function(done) {
       var fakeRedis = new FakeRedis();
       var db = new PileClient(fakeRedis);
 
