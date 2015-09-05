@@ -65,7 +65,7 @@ PileClient.prototype.getLastReference = function(name, callback) {
     if (err) {
       return callback(err);
     }
-    if (!latest) {
+    if (!latest || latest.length === 0) {
       return callback(new Error(name + ' was not set'));
     }
     return callback(undefined, latest[0]);

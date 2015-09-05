@@ -122,4 +122,44 @@ describe('pile client', function() {
       });
     });
   });
+
+  describe('get last reference', function() {
+    it('should get the last key for a name that exists', function(done) {
+      var fakeRedis = new FakeRedis();
+      fakeRedis.storage['piledb:reference:captain'] = ['fred', 'bob'];
+      var db = new PileClient(fakeRedis);
+
+      db.getLastReference('captain', function(err, key) {
+        expect(err).to.be.undefined;
+        expect(key).to.equal('bob');
+        done();
+      });
+    });
+
+    it('should fail when name does not exist', function(done) {
+      var fakeRedis = new FakeRedis();
+      var db = new PileClient(fakeRedis);
+
+      db.getLastReference('captain', function(err, key) {
+        expect(err).to.be.an.instanceof(Error);
+        expect(key).to.be.undefined;
+        done();
+      });
+    });
+
+    it('should propagate errors from LRANGE', function(done) {
+      var alwaysFailingLRANGE = {
+        LRANGE: function(key, start, end, callback) {
+          return callback(new Error('oops'));
+        }
+      };
+      var db = new PileClient(alwaysFailingLRANGE);
+
+      db.getLastReference('captain', function(err, key) {
+        expect(err).to.be.an.instanceof(Error);
+        expect(key).to.be.undefined;
+        done();
+      });
+    });
+  });
 });
