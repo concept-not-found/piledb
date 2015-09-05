@@ -83,4 +83,32 @@ describe('pile client', function() {
       });
     });
   });
+
+  describe('put reference', function() {
+    it('should put a key for a name', function(done) {
+      var fakeRedis = new FakeRedis();
+      var db = new PileClient(fakeRedis);
+
+      db.putReference('captain', 'fred', function(err) {
+        expect(err).to.be.undefined;
+        expect(fakeRedis.storage).to.include.keys('piledb:reference:captain');
+        expect(fakeRedis.storage['piledb:reference:captain']).to.eql(['fred']);
+        done();
+      });
+    });
+
+    it('should propagate errors from LPUSH', function(done) {
+      var alwaysFailingLPUSH = {
+        LPUSH: function(key, value, callback) {
+          return callback(new Error('oops'));
+        }
+      };
+      var db = new PileClient(alwaysFailingLPUSH);
+
+      db.putReference('captain', 'fred', function(err) {
+        expect(err).to.be.an.instanceof(Error);
+        done();
+      });
+    });
+  });
 });

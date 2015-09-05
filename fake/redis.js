@@ -21,4 +21,13 @@ FakeRedis.prototype.LRANGE = function(key, start, end, callback) {
   return callback(undefined, this.storage[key].slice(start, end));
 };
 
+FakeRedis.prototype.LPUSH = function(key, value, callback) {
+  if (!this.storage[key]) {
+    this.storage[key] = [];
+  }
+
+  this.storage[key].push(value);
+  return callback();
+};
+
 module.exports = FakeRedis;
