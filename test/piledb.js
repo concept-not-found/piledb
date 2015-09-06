@@ -70,14 +70,34 @@ describe('pile client', function() {
 
     it('should fail for a key that has been redacted', function(done) {
       var fakeRedis = new FakeRedis();
-      fakeRedis.storage['piledb:redaction'] = [{
-        key: 'fred',
-        reason: 'court order 156'
-      }];
+      fakeRedis.storage['piledb:redaction'] = [
+        {
+          key: 'bob',
+          reason: 'court order 638'
+        },
+        {
+          key: 'fred',
+          reason: 'court order 156'
+        }
+      ];
       var db = new PileClient(fakeRedis);
 
       db.getData('fred', function(err, value) {
         expect(err).to.be.an.instanceof(PileClient.RedactedDataError);
+        expect(value).to.be.undefined;
+        done();
+      });
+    });
+
+    it('should propagate errors when failing to get redactions', function(done) {
+      var fakeRedis = new FakeRedis();
+      var db = new PileClient(fakeRedis);
+      db.getRedactions = function(callback) {
+        return callback(new Error('oops'));
+      };
+
+      db.getData('fred', function(err, value) {
+        expect(err).to.be.an.instanceof(Error);
         expect(value).to.be.undefined;
         done();
       });
