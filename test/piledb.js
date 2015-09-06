@@ -1,3 +1,5 @@
+'use strict';
+
 var PileClient = require('../piledb');
 var FakeRedis = require('../fake/redis');
 var expect = require('chai').expect;

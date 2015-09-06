@@ -1,3 +1,5 @@
+'use strict';
+
 function PileClient(redisClient, namespace) {
   this.redisClient = redisClient;
   this.namespace = namespace || 'piledb';
