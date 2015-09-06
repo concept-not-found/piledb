@@ -79,7 +79,7 @@ PileClient.prototype.getData = function(key, callback) {
 };
 
 PileClient.prototype.addReference = function(name, key, callback) {
-  return this.redisClient.LPUSH(this.referenceKey(name), key, callback);
+  return this.redisClient.RPUSH(this.referenceKey(name), key, callback);
 };
 
 PileClient.prototype.getLastReference = function(name, callback) {
@@ -112,7 +112,7 @@ PileClient.prototype.redactData = function(key, reason, callback) {
       key: key,
       reason: reason
     };
-    _this.redisClient.LPUSH(_this.redactionKey(), redactionLog, function(err) {
+    _this.redisClient.RPUSH(_this.redactionKey(), redactionLog, function(err) {
       if (err) {
         return callback(new Error('failed to log redaction, data not deleted: ' + err.message));
       }

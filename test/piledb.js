@@ -145,13 +145,13 @@ describe('pile client', function() {
       });
     });
 
-    it('should propagate errors from LPUSH', function(done) {
-      var alwaysFailingLPUSH = {
-        LPUSH: function(key, value, callback) {
+    it('should propagate errors from RPUSH', function(done) {
+      var alwaysFailingRPUSH = {
+        RPUSH: function(key, value, callback) {
           return callback(new Error('oops'));
         }
       };
-      var db = new PileClient(alwaysFailingLPUSH);
+      var db = new PileClient(alwaysFailingRPUSH);
 
       db.addReference('captain', 'fred', function(err) {
         expect(err).to.be.an.instanceof(Error);
@@ -293,10 +293,10 @@ describe('pile client', function() {
       });
     });
 
-    it('should propagate errors from LPUSH', function(done) {
+    it('should propagate errors from RPUSH', function(done) {
       var fakeRedis = new FakeRedis();
       fakeRedis.storage['piledb:data:fred'] = 'yogurt';
-      fakeRedis.LPUSH = function(key, value, callback) {
+      fakeRedis.RPUSH = function(key, value, callback) {
         return callback(new Error('oops'));
       };
       var db = new PileClient(fakeRedis);

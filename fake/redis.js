@@ -6,10 +6,10 @@ function FakeRedis() {
 
 FakeRedis.prototype.SETNX = function(key, value, callback) {
   if (this.storage[key]) {
-    return callback(undefined, false);
+    return callback(undefined, 0);
   }
   this.storage[key] = value;
-  return callback(undefined, true);
+  return callback(undefined, 1);
 };
 
 FakeRedis.prototype.DEL = function(key, callback) {
@@ -18,7 +18,8 @@ FakeRedis.prototype.DEL = function(key, callback) {
 };
 
 FakeRedis.prototype.GET = function(key, callback) {
-  return callback(undefined, this.storage[key]);
+  var value = this.storage[key] || null;
+  return callback(undefined, value);
 };
 
 FakeRedis.prototype.EXISTS = function(key, callback) {
@@ -48,7 +49,7 @@ FakeRedis.prototype.LRANGE = function(key, start, end, callback) {
   return callback(undefined, values.slice(redisStartToSliceStart, redisEndToSliceEnd));
 };
 
-FakeRedis.prototype.LPUSH = function(key, value, callback) {
+FakeRedis.prototype.RPUSH = function(key, value, callback) {
   if (!this.storage[key]) {
     this.storage[key] = [];
   }
