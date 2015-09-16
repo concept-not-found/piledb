@@ -1,9 +1,9 @@
 'use strict';
 
-var expect = require('chai').expect;
+const expect = require('chai').expect;
 
 function redisContract(name, redisClient) {
-  var prefix = 'redis-contract:' + new Date().getTime() + ':';
+  const prefix = 'redis-contract:' + new Date().getTime() + ':';
   describe(name + ' contract', function() {
     describe('key value', function() {
       it('should GET key value after SETNX', function(done) {
@@ -39,7 +39,7 @@ function redisContract(name, redisClient) {
             expect(keyExists).to.equal(1);
             done();
           });
-        })
+        });
       });
 
       it('should not EXIST by default', function(done) {

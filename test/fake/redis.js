@@ -1,6 +1,6 @@
 'use strict';
 
-var redisContract = require('../../contract/redis');
-var FakeRedis = require('../../fake/redis');
+const redisContract = require('../../contract/redis');
+const FakeRedis = require('../../fake/redis');
 
 redisContract('fake redis', new FakeRedis());
