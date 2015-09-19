@@ -30,19 +30,6 @@ describe('pile client', () => {
             expect(err).to.be.an.instanceof(AlreadySetError);
           });
     });
-
-    it('should propagate errors from SETNX', () => {
-      const fakeRedis = new FakeRedis();
-      fakeRedis.SETNX = function(key, value, callback) {
-        return callback(new Error('oops'));
-      };
-      const db = new PileClient(fakeRedis);
-
-      return db.putData('fred', 'yogurt')
-          .catch((err) => {
-            expect(err).to.be.an.instanceof(Error);
-          });
-    });
   });
 
   describe('get data', () => {
@@ -86,32 +73,6 @@ describe('pile client', () => {
             expect(err).to.be.an.instanceof(RedactedDataError);
           });
     });
-
-    it('should propagate errors when failing to get redactions', () => {
-      const fakeRedis = new FakeRedis();
-      const db = new PileClient(fakeRedis);
-      db.getRedactions = () => {
-        return Promise.reject(new Error('oops'));
-      };
-
-      return db.getData('fred')
-          .catch((err) => {
-            expect(err).to.be.an.instanceof(Error);
-          });
-    });
-
-    it('should propagate errors from GET', () => {
-      const fakeRedis = new FakeRedis();
-      fakeRedis.GET = function(key, callback) {
-        return callback(new Error('oops'));
-      };
-      const db = new PileClient(fakeRedis);
-
-      return db.getData('fred')
-          .catch((err) => {
-            expect(err).to.be.an.instanceof(Error);
-          });
-    });
   });
 
   describe('add reference', () => {
@@ -137,19 +98,6 @@ describe('pile client', () => {
             expect(fakeRedis.storage['piledb:reference:captain']).to.eql(['fred', 'bob']);
           });
     });
-
-    it('should propagate errors from RPUSH', () => {
-      const fakeRedis = new FakeRedis();
-      fakeRedis.RPUSH = function(key, value, callback) {
-        return callback(new Error('oops'));
-      };
-      const db = new PileClient(fakeRedis);
-
-      return db.addReference('captain', 'fred')
-          .catch((err) => {
-            expect(err).to.be.an.instanceof(Error);
-          });
-    });
   });
 
   describe('get last reference', () => {
@@ -173,19 +121,6 @@ describe('pile client', () => {
             expect(err).to.be.an.instanceof(NotFoundError);
           });
     });
-
-    it('should propagate errors from LRANGE', () => {
-      const fakeRedis = new FakeRedis();
-      fakeRedis.LRANGE = function(key, start, end, callback) {
-        return callback(new Error('oops'));
-      };
-      const db = new PileClient(fakeRedis);
-
-      return db.getLastReference('captain')
-          .catch((err) => {
-            expect(err).to.be.an.instanceof(Error);
-          });
-    });
   });
 
   describe('get reference history', () => {
@@ -207,19 +142,6 @@ describe('pile client', () => {
       return db.getReferenceHistory('captain')
           .then((key) => {
             expect(key).to.eql([]);
-          });
-    });
-
-    it('should propagate errors from LRANGE', () => {
-      const fakeRedis = new FakeRedis();
-      fakeRedis.LRANGE = function(key, start, end, callback) {
-        return callback(new Error('oops'));
-      };
-      const db = new PileClient(fakeRedis);
-
-      return db.getReferenceHistory('captain')
-          .catch((err) => {
-            expect(err).to.be.an.instanceof(Error);
           });
     });
   });
@@ -261,20 +183,7 @@ describe('pile client', () => {
           });
     });
 
-    it('should propagate errors from EXISTS', () => {
-      const fakeRedis = new FakeRedis();
-      fakeRedis.EXISTS = function(key, callback) {
-        return callback(new Error('oops'));
-      };
-      const db = new PileClient(fakeRedis);
-
-      return db.redactData('fred', 'court order 156')
-          .catch((err) => {
-            expect(err).to.be.an.instanceof(Error);
-          });
-    });
-
-    it('should propagate errors from RPUSH', () => {
+    it('should add additonal information on RPUSH failure', () => {
       const fakeRedis = new FakeRedis();
       fakeRedis.storage['piledb:data:fred'] = 'yogurt';
       fakeRedis.RPUSH = function(key, value, callback) {
@@ -285,10 +194,11 @@ describe('pile client', () => {
       return db.redactData('fred', 'court order 156')
           .catch((err) => {
             expect(err).to.be.an.instanceof(Error);
+            expect(err.message).to.not.equal('oops');
           });
     });
 
-    it('should propagate errors from DEL', () => {
+    it('should add additonal information on DEL failure', () => {
       const fakeRedis = new FakeRedis();
       fakeRedis.storage['piledb:data:fred'] = 'yogurt';
       fakeRedis.DEL = function(key, callback) {
@@ -299,6 +209,7 @@ describe('pile client', () => {
       return db.redactData('fred', 'court order 156')
           .catch((err) => {
             expect(err).to.be.an.instanceof(Error);
+            expect(err.message).to.not.equal('oops');
           });
     });
   });
@@ -328,19 +239,6 @@ describe('pile client', () => {
       return db.getRedactions()
           .then((redactions) => {
             expect(redactions).to.eql([]);
-          });
-    });
-
-    it('should propagate errors from LRANGE', () => {
-      const fakeRedis = new FakeRedis();
-      fakeRedis.LRANGE = function(key, start, end, callback) {
-        return callback(new Error('oops'));
-      };
-      const db = new PileClient(fakeRedis);
-
-      return db.getRedactions()
-          .catch((err) => {
-            expect(err).to.be.an.instanceof(Error);
           });
     });
   });
