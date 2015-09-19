@@ -3,7 +3,7 @@
 const packageJson = require('./package');
 const semver = require('semver');
 const promisify = require('es6-promisify');
-const _ = require('underscore');
+const _ = require('lodash');
 
 /* istanbul ignore if */
 if (!semver.satisfies(process.version, packageJson.engines.node)) {
@@ -82,7 +82,7 @@ class PileClient {
           if (!latest || _.isEmpty(latest)) {
             throw new NotFoundError(name);
           }
-          return latest[0];
+          return _.first(latest);
         });
   }
 
