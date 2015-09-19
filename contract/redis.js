@@ -3,21 +3,25 @@
 const async = require('async');
 const expect = require('chai').expect;
 
-function redisContract(name, redisClient) {
-  const prefix = `redis-contract:${new Date().getTime()}:`;
-  describe(`${name} contract`, () => {
+function redisContract(implementationName, redisClient) {
+  const prefix = `redis-contract:${new Date().getTime()}`;
+  function getKey(name) {
+    return `${prefix}:${name}`;
+  }
+
+  describe(`${implementationName} contract`, () => {
     describe('key value', () => {
       it('should GET key value after SETNX', (done) => {
         const flow = [];
         flow.push((callback) => {
-          redisClient.SETNX(`${prefix}fred`, 'yogurt', (err, keyWasSet) => {
+          redisClient.SETNX(getKey('fred'), 'yogurt', (err, keyWasSet) => {
             expect(err).to.be.not.ok;
             expect(keyWasSet).to.equal(1);
             return callback();
           });
         });
         flow.push((callback) => {
-          redisClient.GET(`${prefix}fred`, (err, value) => {
+          redisClient.GET(getKey('fred'), (err, value) => {
             expect(err).to.be.not.ok;
             expect(value).to.equal('yogurt');
             return callback();
@@ -29,14 +33,14 @@ function redisContract(name, redisClient) {
       it('should fail using SETNX twice', (done) => {
         const flow = [];
         flow.push((callback) => {
-          redisClient.SETNX(`${prefix}bob`, 'pizza', (err, keyWasSet) => {
+          redisClient.SETNX(getKey('bob'), 'pizza', (err, keyWasSet) => {
             expect(err).to.be.not.ok;
             expect(keyWasSet).to.equal(1);
             return callback();
           });
         });
         flow.push((callback) => {
-          redisClient.SETNX(`${prefix}bob`, 'pizza', (err, keyWasSet) => {
+          redisClient.SETNX(getKey('bob'), 'pizza', (err, keyWasSet) => {
             expect(err).to.be.not.ok;
             expect(keyWasSet).to.equal(0);
             return callback();
@@ -48,14 +52,14 @@ function redisContract(name, redisClient) {
       it('should EXIST once SETNX', (done) => {
         const flow = [];
         flow.push((callback) => {
-          redisClient.SETNX(`${prefix}alice`, 'cupcakes', (err, keyWasSet) => {
+          redisClient.SETNX(getKey('alice'), 'cupcakes', (err, keyWasSet) => {
             expect(err).to.be.not.ok;
             expect(keyWasSet).to.equal(1);
             return callback();
           });
         });
         flow.push((callback) => {
-          redisClient.EXISTS(`${prefix}alice`, (err, keyExists) => {
+          redisClient.EXISTS(getKey('alice'), (err, keyExists) => {
             expect(err).to.be.not.ok;
             expect(keyExists).to.equal(1);
             return callback();
@@ -65,7 +69,7 @@ function redisContract(name, redisClient) {
       });
 
       it('should not EXIST by default', (done) => {
-        redisClient.EXISTS(`${prefix}eva`, (err, keyExists) => {
+        redisClient.EXISTS(getKey('eva'), (err, keyExists) => {
           expect(err).to.be.not.ok;
           expect(keyExists).to.equal(0);
           done();
@@ -73,7 +77,7 @@ function redisContract(name, redisClient) {
       });
 
       it('should GET undefined by default', (done) => {
-        redisClient.GET(`${prefix}eva`, (err, keyExists) => {
+        redisClient.GET(getKey('eva'), (err, keyExists) => {
           expect(err).to.be.not.ok;
           expect(keyExists).to.be.null;
           done();
@@ -83,20 +87,20 @@ function redisContract(name, redisClient) {
       it('should not EXIST after DEL', (done) => {
         const flow = [];
         flow.push((callback) => {
-          redisClient.SETNX(`${prefix}betty`, 'fried chicken', (err, keyWasSet) => {
+          redisClient.SETNX(getKey('betty'), 'fried chicken', (err, keyWasSet) => {
             expect(err).to.be.not.ok;
             expect(keyWasSet).to.equal(1);
             return callback();
           });
         });
         flow.push((callback) => {
-          redisClient.DEL(`${prefix}betty`, (err) => {
+          redisClient.DEL(getKey('betty'), (err) => {
             expect(err).to.be.not.ok;
             return callback();
           });
         });
         flow.push((callback) => {
-          redisClient.EXISTS(`${prefix}betty`, (err, keyExists) => {
+          redisClient.EXISTS(getKey('betty'), (err, keyExists) => {
             expect(err).to.be.not.ok;
             expect(keyExists).to.equal(0);
             return callback();
@@ -108,7 +112,7 @@ function redisContract(name, redisClient) {
 
     describe('list', () => {
       it('should be empty by default', (done) => {
-        redisClient.LRANGE(`${prefix}cadet`, 0, -1, (err, cadets) => {
+        redisClient.LRANGE(getKey('cadet'), 0, -1, (err, cadets) => {
           expect(err).to.be.not.ok;
           expect(cadets).to.eql([]);
           done();
@@ -118,13 +122,13 @@ function redisContract(name, redisClient) {
       it('should contain what was RPUSH', (done) => {
         const flow = [];
         flow.push((callback) => {
-          redisClient.RPUSH(`${prefix}captain`, 'fred', (err) => {
+          redisClient.RPUSH(getKey('captain'), 'fred', (err) => {
             expect(err).to.be.not.ok;
             return callback();
           });
         });
         flow.push((callback) => {
-          redisClient.LRANGE(`${prefix}captain`, 0, -1, (err, captains) => {
+          redisClient.LRANGE(getKey('captain'), 0, -1, (err, captains) => {
             expect(err).to.be.not.ok;
             expect(captains).to.eql(['fred']);
             return callback();
@@ -136,19 +140,19 @@ function redisContract(name, redisClient) {
       it('should RPUSH to the end', (done) => {
         const flow = [];
         flow.push((callback) => {
-          redisClient.RPUSH(`${prefix}cook`, 'sam', (err) => {
+          redisClient.RPUSH(getKey('cook'), 'sam', (err) => {
             expect(err).to.be.not.ok;
             return callback();
           });
         });
         flow.push((callback) => {
-          redisClient.RPUSH(`${prefix}cook`, 'tammy', (err) => {
+          redisClient.RPUSH(getKey('cook'), 'tammy', (err) => {
             expect(err).to.be.not.ok;
             return callback();
           });
         });
         flow.push((callback) => {
-          redisClient.LRANGE(`${prefix}cook`, 0, -1, (err, cooks) => {
+          redisClient.LRANGE(getKey('cook'), 0, -1, (err, cooks) => {
             expect(err).to.be.not.ok;
             expect(cooks).to.eql(['sam', 'tammy']);
             return callback();
@@ -160,47 +164,47 @@ function redisContract(name, redisClient) {
       it('should LRANGE elements', (done) => {
         const flow = [];
         flow.push((callback) => {
-          redisClient.RPUSH(`${prefix}deckhand`, 'john', (err) => {
+          redisClient.RPUSH(getKey('deckhand'), 'john', (err) => {
             expect(err).to.be.not.ok;
             return callback();
           });
         });
         flow.push((callback) => {
-          redisClient.RPUSH(`${prefix}deckhand`, 'james', (err) => {
+          redisClient.RPUSH(getKey('deckhand'), 'james', (err) => {
             expect(err).to.be.not.ok;
             return callback();
           });
         });
         flow.push((callback) => {
-          redisClient.LRANGE(`${prefix}deckhand`, 0, 0, (err, deckhands) => {
-            expect(err).to.be.not.ok;
-            expect(deckhands).to.eql(['john']);
-            return callback();
-          });
-        });
-        flow.push((callback) => {
-          redisClient.LRANGE(`${prefix}deckhand`, 1, 1, (err, deckhands) => {
-            expect(err).to.be.not.ok;
-            expect(deckhands).to.eql(['james']);
-            return callback();
-          });
-        });
-        flow.push((callback) => {
-          redisClient.LRANGE(`${prefix}deckhand`, -1, -1, (err, deckhands) => {
-            expect(err).to.be.not.ok;
-            expect(deckhands).to.eql(['james']);
-            return callback();
-          });
-        });
-        flow.push((callback) => {
-          redisClient.LRANGE(`${prefix}deckhand`, -2, -2, (err, deckhands) => {
+          redisClient.LRANGE(getKey('deckhand'), 0, 0, (err, deckhands) => {
             expect(err).to.be.not.ok;
             expect(deckhands).to.eql(['john']);
             return callback();
           });
         });
         flow.push((callback) => {
-          redisClient.LRANGE(`${prefix}deckhand`, 3, 3, (err, deckhands) => {
+          redisClient.LRANGE(getKey('deckhand'), 1, 1, (err, deckhands) => {
+            expect(err).to.be.not.ok;
+            expect(deckhands).to.eql(['james']);
+            return callback();
+          });
+        });
+        flow.push((callback) => {
+          redisClient.LRANGE(getKey('deckhand'), -1, -1, (err, deckhands) => {
+            expect(err).to.be.not.ok;
+            expect(deckhands).to.eql(['james']);
+            return callback();
+          });
+        });
+        flow.push((callback) => {
+          redisClient.LRANGE(getKey('deckhand'), -2, -2, (err, deckhands) => {
+            expect(err).to.be.not.ok;
+            expect(deckhands).to.eql(['john']);
+            return callback();
+          });
+        });
+        flow.push((callback) => {
+          redisClient.LRANGE(getKey('deckhand'), 3, 3, (err, deckhands) => {
             expect(err).to.be.not.ok;
             expect(deckhands).to.eql([]);
             return callback();
