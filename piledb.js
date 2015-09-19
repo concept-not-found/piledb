@@ -5,7 +5,7 @@ const semver = require('semver');
 const promisify = require('es6-promisify');
 
 if (!semver.satisfies(process.version, packageJson.engines.node)) {
-  throw new Error('Requires a node version matching ' + pkg.engines.node);
+  throw new Error('Requires a node version matching ' + packageJson.engines.node);
 }
 
 class PileClient {
