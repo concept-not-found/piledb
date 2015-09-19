@@ -12,6 +12,7 @@
     "test": "./node_modules/.bin/istanbul cover ./node_modules/.bin/_mocha -- --reporter spec --recursive"
   },
   "dependencies": {
+    "es6-promisify": "^3.0.0",
     "semver": "^5.0.3"
   },
   "devDependencies": {

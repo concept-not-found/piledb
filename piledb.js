@@ -2,119 +2,116 @@
 
 const packageJson = require('./package');
 const semver = require('semver');
+const promisify = require('es6-promisify');
 
-if(!semver.satisfies(process.version, packageJson.engines.node)) {
+if (!semver.satisfies(process.version, packageJson.engines.node)) {
   throw new Error('Requires a node version matching ' + pkg.engines.node);
 }
 
 class PileClient {
   constructor(redisClient, namespace) {
-    this.redisClient = redisClient;
     this.namespace = namespace || 'piledb';
+    this.promiseRedisClient = {
+      SETNX: promisify(redisClient.SETNX.bind(redisClient)),
+      GET: promisify(redisClient.GET.bind(redisClient)),
+      RPUSH: promisify(redisClient.RPUSH.bind(redisClient)),
+      LRANGE: promisify(redisClient.LRANGE.bind(redisClient)),
+      EXISTS: promisify(redisClient.EXISTS.bind(redisClient)),
+      DEL: promisify(redisClient.DEL.bind(redisClient))
+    };
   }
 
   internalKey(key) {
-    return this.namespace + ':' + key;
+    return `${this.namespace}:${key}`;
   }
 
   dataKey(key) {
-    return this.internalKey('data:' + key);
+    return this.internalKey(`data:${key}`);
   }
 
   referenceKey(key) {
-    return this.internalKey('reference:' + key);
+    return this.internalKey(`reference:${key}`);
   }
 
   redactionKey() {
     return this.internalKey('redaction');
   }
 
-  putData(key, value, callback) {
-    this.redisClient.SETNX(this.dataKey(key), value, function(err, keyWasSet) {
-      if (err) {
-        return callback(err);
-      }
-      if (!keyWasSet) {
-        return callback(new AlreadySetError(key));
-      }
-      return callback();
-    });
-  }
-
-  getData(key, callback) {
-    var _this = this;
-    this.redisClient.GET(this.dataKey(key), function(err, value) {
-      if (err) {
-        return callback(err);
-      }
-      if (!value) {
-        _this.getRedactions(function(err, redactions) {
-          if (err) {
-            return callback(err);
+  putData(key, value) {
+    return this.promiseRedisClient.SETNX(this.dataKey(key), value)
+        .then(function(keyWasSet) {
+          if (!keyWasSet) {
+            throw new AlreadySetError(key);
           }
-          for (var i = 0; i < redactions.length; i++) {
-            if (redactions[i].key === key) {
-              return callback(new RedactedDataError(redactions[i]));
-            }
-          }
-          return callback(new NotFoundError(key));
         });
-      } else {
-        return callback(undefined, value);
-      }
-    });
   }
 
-  addReference(name, key, callback) {
-    return this.redisClient.RPUSH(this.referenceKey(name), key, callback);
-  }
-
-  getLastReference(name, callback) {
-    this.redisClient.LRANGE(this.referenceKey(name), -1, -1, function(err, latest) {
-      if (err) {
-        return callback(err);
-      }
-      if (!latest || latest.length === 0) {
-        return callback(new NotFoundError(name));
-      }
-      return callback(undefined, latest[0]);
-    });
-  }
-
-  getReferenceHistory(name, callback) {
-    return this.redisClient.LRANGE(this.referenceKey(name), 0, -1, callback);
-  }
-
-  redactData(key, reason, callback) {
+  getData(key) {
     var _this = this;
-    this.redisClient.EXISTS(this.dataKey(key), function(err, keyExists) {
-      if (err) {
-        return callback(err);
-      }
-      if (!keyExists) {
-        return callback(new NotFoundError(key));
-      }
-
-      var redactionLog = {
-        key: key,
-        reason: reason
-      };
-      _this.redisClient.RPUSH(_this.redactionKey(), redactionLog, function(err) {
-        if (err) {
-          return callback(new Error('failed to log redaction, data not deleted: ' + err.message));
-        }
-        return _this.redisClient.DEL(_this.dataKey(key), function(err) {
-          if (err) {
-            return callback(new Error('failed to delete redacted data.  left dirty redaction log: ' + err.message));
+    return this.promiseRedisClient.GET(this.dataKey(key))
+        .then(function(value) {
+          if (!value) {
+            return _this.getRedactions()
+                .then(function(redactions) {
+                  for (var i = 0; i < redactions.length; i++) {
+                    if (redactions[i].key === key) {
+                      throw new RedactedDataError(redactions[i]);
+                    }
+                  }
+                  throw new NotFoundError(key);
+                });
+          } else {
+            return value;
           }
-          return callback();
         });
-      });
-    });
   }
 
-  getRedactions(callback) {
-    return this.redisClient.LRANGE(this.redactionKey(), 0, -1, callback);
+  addReference(name, key) {
+    return this.promiseRedisClient.RPUSH(this.referenceKey(name), key);
+  }
+
+  getLastReference(name) {
+    return this.promiseRedisClient.LRANGE(this.referenceKey(name), -1, -1)
+        .then(function(latest) {
+          if (!latest || latest.length === 0) {
+            throw new NotFoundError(name);
+          }
+          return latest[0];
+        });
+  }
+
+  getReferenceHistory(name) {
+    return this.promiseRedisClient.LRANGE(this.referenceKey(name), 0, -1);
+  }
+
+  redactData(key, reason) {
+    var _this = this;
+    return this.promiseRedisClient.EXISTS(this.dataKey(key))
+        .then(function(keyExists) {
+          if (!keyExists) {
+            throw new NotFoundError(key);
+          }
+
+          var redactionLog = {
+            key: key,
+            reason: reason
+          };
+          return _this.promiseRedisClient.RPUSH(_this.redactionKey(), redactionLog)
+              .then(function() {
+
+                return _this.promiseRedisClient.DEL(_this.dataKey(key))
+                    .catch(function(err) {
+                      throw new Error('failed to delete redacted data.  left dirty redaction log: ' + err.message);
+                    });
+              })
+              .catch(function(err) {
+                throw new Error('failed to log redaction, data not deleted: ' + err.message);
+              });
+        });
+  }
+
+  getRedactions() {
+    return this.promiseRedisClient.LRANGE(this.redactionKey(), 0, -1);
   }
 }
 
