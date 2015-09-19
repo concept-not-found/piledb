@@ -3,6 +3,7 @@
 const packageJson = require('./package');
 const semver = require('semver');
 const promisify = require('es6-promisify');
+const _ = require('underscore');
 
 /* istanbul ignore if */
 if (!semver.satisfies(process.version, packageJson.engines.node)) {
@@ -53,10 +54,11 @@ class PileClient {
           if (!value) {
             return this.getRedactions()
                 .then((redactions) => {
-                  for (let i = 0; i < redactions.length; i++) {
-                    if (redactions[i].key === key) {
-                      throw new RedactedDataError(redactions[i]);
-                    }
+                  const redaction = _.find(redactions, (redaction) => {
+                    return redaction.key === key;
+                  });
+                  if (redaction) {
+                    throw new RedactedDataError(redaction);
                   }
                   throw new NotFoundError(key);
                 });
@@ -73,7 +75,7 @@ class PileClient {
   getLastReference(name) {
     return this.promiseRedisClient.LRANGE(this.referenceKey(name), -1, -1)
         .then((latest) => {
-          if (!latest || latest.length === 0) {
+          if (!latest || _.isEmpty(latest)) {
             throw new NotFoundError(name);
           }
           return latest[0];
@@ -97,7 +99,6 @@ class PileClient {
           };
           return this.promiseRedisClient.RPUSH(this.redactionKey(), redactionLog)
               .then(() => {
-
                 return this.promiseRedisClient.DEL(this.dataKey(key))
                     .catch((err) => {
                       throw new Error(`failed to delete redacted data.  left dirty redaction log: ${err.message}`);
