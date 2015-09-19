@@ -4,6 +4,7 @@ const packageJson = require('./package');
 const semver = require('semver');
 const promisify = require('es6-promisify');
 
+/* istanbul ignore if */
 if (!semver.satisfies(process.version, packageJson.engines.node)) {
   throw new Error(`Requires a node version matching ${packageJson.engines.node}`);
 }
