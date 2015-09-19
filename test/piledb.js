@@ -58,10 +58,6 @@ describe('pile client', () => {
       const fakeRedis = new FakeRedis();
       fakeRedis.storage['piledb:redaction'] = [
         {
-          key: 'bob',
-          reason: 'court order 638'
-        },
-        {
           key: 'fred',
           reason: 'court order 156'
         }
