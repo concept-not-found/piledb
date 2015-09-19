@@ -5,7 +5,7 @@ const semver = require('semver');
 const promisify = require('es6-promisify');
 
 if (!semver.satisfies(process.version, packageJson.engines.node)) {
-  throw new Error('Requires a node version matching ' + packageJson.engines.node);
+  throw new Error(`Requires a node version matching ${packageJson.engines.node}`);
 }
 
 class PileClient {
@@ -39,7 +39,7 @@ class PileClient {
 
   putData(key, value) {
     return this.promiseRedisClient.SETNX(this.dataKey(key), value)
-        .then(function(keyWasSet) {
+        .then((keyWasSet) => {
           if (!keyWasSet) {
             throw new AlreadySetError(key);
           }
@@ -47,13 +47,12 @@ class PileClient {
   }
 
   getData(key) {
-    var _this = this;
     return this.promiseRedisClient.GET(this.dataKey(key))
-        .then(function(value) {
+        .then((value) => {
           if (!value) {
-            return _this.getRedactions()
-                .then(function(redactions) {
-                  for (var i = 0; i < redactions.length; i++) {
+            return this.getRedactions()
+                .then((redactions) => {
+                  for (let i = 0; i < redactions.length; i++) {
                     if (redactions[i].key === key) {
                       throw new RedactedDataError(redactions[i]);
                     }
@@ -72,7 +71,7 @@ class PileClient {
 
   getLastReference(name) {
     return this.promiseRedisClient.LRANGE(this.referenceKey(name), -1, -1)
-        .then(function(latest) {
+        .then((latest) => {
           if (!latest || latest.length === 0) {
             throw new NotFoundError(name);
           }
@@ -85,27 +84,26 @@ class PileClient {
   }
 
   redactData(key, reason) {
-    var _this = this;
     return this.promiseRedisClient.EXISTS(this.dataKey(key))
-        .then(function(keyExists) {
+        .then((keyExists) => {
           if (!keyExists) {
             throw new NotFoundError(key);
           }
 
-          var redactionLog = {
-            key: key,
-            reason: reason
+          const redactionLog = {
+            key,
+            reason
           };
-          return _this.promiseRedisClient.RPUSH(_this.redactionKey(), redactionLog)
-              .then(function() {
+          return this.promiseRedisClient.RPUSH(this.redactionKey(), redactionLog)
+              .then(() => {
 
-                return _this.promiseRedisClient.DEL(_this.dataKey(key))
-                    .catch(function(err) {
-                      throw new Error('failed to delete redacted data.  left dirty redaction log: ' + err.message);
+                return this.promiseRedisClient.DEL(this.dataKey(key))
+                    .catch((err) => {
+                      throw new Error(`failed to delete redacted data.  left dirty redaction log: ${err.message}`);
                     });
               })
-              .catch(function(err) {
-                throw new Error('failed to log redaction, data not deleted: ' + err.message);
+              .catch((err) => {
+                throw new Error(`failed to log redaction, data not deleted: ${err.message}`);
               });
         });
   }
@@ -120,7 +118,7 @@ class AlreadySetError extends Error {
     super();
     this.name = this.constructor.name;
     this.stack = (new Error()).stack;
-    this.message = key + ' was already set';
+    this.message = `${key} was already set`;
   }
 }
 
@@ -129,7 +127,7 @@ class NotFoundError extends Error {
     super();
     this.name = this.constructor.name;
     this.stack = (new Error()).stack;
-    this.message = key + ' was not set';
+    this.message = `${key} was not set`;
   }
 }
 
@@ -138,7 +136,7 @@ class RedactedDataError extends Error {
     super();
     this.name = this.constructor.name;
     this.stack = (new Error()).stack;
-    this.message = redaction.key + ' was redacted: ' + redaction.reason;
+    this.message = `${redaction.key} was redacted: ${redaction.reason}`;
   }
 }
 

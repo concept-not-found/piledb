@@ -7,4 +7,4 @@ before_script:
   - npm install -g eslint
 script:
   - npm test
-  - eslint .
+  - eslint --debug .
