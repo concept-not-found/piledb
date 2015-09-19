@@ -10,16 +10,20 @@ if (!semver.satisfies(process.version, packageJson.engines.node)) {
   throw new Error(`Requires a node version matching ${packageJson.engines.node}`);
 }
 
+function promisifyMethod(instance, methodName) {
+  return promisify(instance[methodName].bind(instance));
+}
+
 class PileClient {
   constructor(redisClient, namespace) {
     this.namespace = namespace || 'piledb';
     this.promiseRedisClient = {
-      SETNX: promisify(redisClient.SETNX.bind(redisClient)),
-      GET: promisify(redisClient.GET.bind(redisClient)),
-      RPUSH: promisify(redisClient.RPUSH.bind(redisClient)),
-      LRANGE: promisify(redisClient.LRANGE.bind(redisClient)),
-      EXISTS: promisify(redisClient.EXISTS.bind(redisClient)),
-      DEL: promisify(redisClient.DEL.bind(redisClient))
+      SETNX: promisifyMethod(redisClient, 'SETNX'),
+      GET: promisifyMethod(redisClient, 'GET'),
+      RPUSH: promisifyMethod(redisClient, 'RPUSH'),
+      LRANGE: promisifyMethod(redisClient, 'LRANGE'),
+      EXISTS: promisifyMethod(redisClient, 'EXISTS'),
+      DEL: promisifyMethod(redisClient, 'DEL')
     };
   }
 
