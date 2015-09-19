@@ -5,4 +5,6 @@ services:
   - redis-server
 before_script:
   - npm install -g eslint
-script: eslint .
+script:
+  - npm test
+  - eslint .
