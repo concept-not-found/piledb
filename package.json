@@ -1,6 +1,6 @@
 {
   "name": "piledb",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "a simple transactional database",
   "repository": "concept-not-found/piledb",
   "license": "Apache-2.0",
