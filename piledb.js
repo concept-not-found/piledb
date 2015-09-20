@@ -55,8 +55,9 @@ class PileClient {
   getData(key) {
     return this.promiseRedisClient.GET(this.dataKey(key))
         .then((value) => {
-          if (!value) {
-            return this.getRedactions()
+          return _.find([
+            value,
+            this.getRedactions()
                 .then((redactions) => {
                   const foundRedaction = _.find(redactions, {
                     key
@@ -65,10 +66,8 @@ class PileClient {
                     throw new RedactedDataError(foundRedaction);
                   }
                   throw new NotFoundError(key);
-                });
-          } else {
-            return value;
-          }
+                })
+          ]);
         });
   }
 
@@ -102,14 +101,14 @@ class PileClient {
             reason
           };
           return this.promiseRedisClient.RPUSH(this.redactionKey(), redactionLog)
-              .then(() => {
-                return this.promiseRedisClient.DEL(this.dataKey(key))
-                    .catch((err) => {
-                      throw new Error(`failed to delete redacted data.  left dirty redaction log: ${err.message}`);
-                    });
-              })
               .catch((err) => {
                 throw new Error(`failed to log redaction, data not deleted: ${err.message}`);
+              });
+        })
+        .then(() => {
+          return this.promiseRedisClient.DEL(this.dataKey(key))
+              .catch((err) => {
+                throw new Error(`failed to delete redacted data.  left dirty redaction log: ${err.message}`);
               });
         });
   }
