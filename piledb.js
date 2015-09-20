@@ -10,25 +10,24 @@ if (!semver.satisfies(process.version, packageJson.engines.node)) {
   throw new Error(`Requires a node version matching ${packageJson.engines.node}`);
 }
 
-function promisifyMethod(instance, methodName) {
-  return promisify(instance[methodName].bind(instance));
-}
-
 class PileClient {
-  constructor(redisClient, namespace) {
-    this.namespace = namespace || 'piledb';
-    this.promiseRedisClient = {
-      SETNX: promisifyMethod(redisClient, 'SETNX'),
-      GET: promisifyMethod(redisClient, 'GET'),
-      RPUSH: promisifyMethod(redisClient, 'RPUSH'),
-      LRANGE: promisifyMethod(redisClient, 'LRANGE'),
-      EXISTS: promisifyMethod(redisClient, 'EXISTS'),
-      DEL: promisifyMethod(redisClient, 'DEL')
-    };
-  }
-
   internalKey(key) {
     return `${this.namespace}:${key}`;
+  }
+
+  constructor(redisClient, namespace) {
+    this.namespace = namespace || 'piledb';
+    const methods = [
+      'SETNX',
+      'GET',
+      'RPUSH',
+      'LRANGE',
+      'EXISTS',
+      'DEL'
+    ];
+    this.promiseRedisClient = _.zipObject(methods, _.map(methods, (method) => {
+      return promisify(redisClient[method].bind(redisClient));
+    }));
   }
 
   dataKey(key) {
