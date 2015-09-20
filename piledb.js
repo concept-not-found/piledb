@@ -58,8 +58,8 @@ class PileClient {
           if (!value) {
             return this.getRedactions()
                 .then((redactions) => {
-                  const foundRedaction = _.find(redactions, (redaction) => {
-                    return redaction.key === key;
+                  const foundRedaction = _.find(redactions, {
+                    key
                   });
                   if (foundRedaction) {
                     throw new RedactedDataError(foundRedaction);

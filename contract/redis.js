@@ -1,6 +1,7 @@
 'use strict';
 
 const async = require('async');
+const _ = require('lodash');
 const expect = require('chai').expect;
 
 function redisContract(implementationName, redisClient) {
