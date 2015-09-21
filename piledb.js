@@ -25,9 +25,8 @@ class PileClient {
       'EXISTS',
       'DEL'
     ];
-    this.promiseRedisClient = _.zipObject(methods, _.map(methods, (method) => {
-      return promisify(redisClient[method].bind(redisClient));
-    }));
+    this.promiseRedisClient = _.zipObject(methods, _.map(methods, (method) =>
+        promisify(redisClient[method].bind(redisClient))));
   }
 
   dataKey(key) {

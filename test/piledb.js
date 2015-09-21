@@ -26,9 +26,8 @@ describe('pile client', () => {
       const db = new PileClient(fakeRedis);
 
       return db.putData('fred', 'ice cream')
-          .catch((err) => {
-            expect(err).to.be.an.instanceof(AlreadySetError);
-          });
+          .catch((err) =>
+              expect(err).to.be.an.instanceof(AlreadySetError));
     });
   });
 
@@ -49,9 +48,8 @@ describe('pile client', () => {
       const db = new PileClient(fakeRedis);
 
       return db.getData('fred')
-          .catch((err) => {
-            expect(err).to.be.an.instanceof(NotFoundError);
-          });
+          .catch((err) =>
+            expect(err).to.be.an.instanceof(NotFoundError));
     });
 
     it('should fail for a key that has been redacted', () => {
@@ -65,9 +63,8 @@ describe('pile client', () => {
       const db = new PileClient(fakeRedis);
 
       return db.getData('fred')
-          .catch((err) => {
-            expect(err).to.be.an.instanceof(RedactedDataError);
-          });
+          .catch((err) =>
+            expect(err).to.be.an.instanceof(RedactedDataError));
     });
   });
 
@@ -103,9 +100,8 @@ describe('pile client', () => {
       const db = new PileClient(fakeRedis);
 
       return db.getLastReference('captain')
-          .then((key) => {
-            expect(key).to.equal('bob');
-          });
+          .then((key) =>
+            expect(key).to.equal('bob'));
     });
 
     it('should fail when name does not exist', () => {
@@ -113,9 +109,8 @@ describe('pile client', () => {
       const db = new PileClient(fakeRedis);
 
       return db.getLastReference('captain')
-          .catch((err) => {
-            expect(err).to.be.an.instanceof(NotFoundError);
-          });
+          .catch((err) =>
+            expect(err).to.be.an.instanceof(NotFoundError));
     });
   });
 
@@ -126,9 +121,8 @@ describe('pile client', () => {
       const db = new PileClient(fakeRedis);
 
       return db.getReferenceHistory('captain')
-          .then((key) => {
-            expect(key).to.eql(['fred', 'bob']);
-          });
+          .then((key) =>
+            expect(key).to.eql(['fred', 'bob']));
     });
 
     it('should get empty when name does not exist', () => {
@@ -136,9 +130,8 @@ describe('pile client', () => {
       const db = new PileClient(fakeRedis);
 
       return db.getReferenceHistory('captain')
-          .then((key) => {
-            expect(key).to.eql([]);
-          });
+          .then((key) =>
+            expect(key).to.eql([]));
     });
   });
 
@@ -149,9 +142,8 @@ describe('pile client', () => {
       const db = new PileClient(fakeRedis);
 
       return db.redactData('fred', 'court order 156')
-          .then(() => {
-            expect(fakeRedis.storage).to.not.include.keys('piledb:data:fred');
-          });
+          .then(() =>
+            expect(fakeRedis.storage).to.not.include.keys('piledb:data:fred'));
     });
 
     it('should add a redaction when redacting data that exists', () => {
@@ -174,9 +166,8 @@ describe('pile client', () => {
       const db = new PileClient(fakeRedis);
 
       return db.redactData('fred', 'court order 156')
-          .catch((err) => {
-            expect(err).to.be.an.instanceof(NotFoundError);
-          });
+          .catch((err) =>
+            expect(err).to.be.an.instanceof(NotFoundError));
     });
 
     it('should add additonal information on RPUSH failure', () => {
@@ -220,12 +211,11 @@ describe('pile client', () => {
       const db = new PileClient(fakeRedis);
 
       return db.getRedactions()
-          .then((redactions) => {
+          .then((redactions) =>
             expect(redactions).to.eql([{
               key: 'fred',
               reason: 'court order 156'
-            }]);
-          });
+            }]));
     });
 
     it('should get empty there are no redactions', () => {
@@ -233,9 +223,8 @@ describe('pile client', () => {
       const db = new PileClient(fakeRedis);
 
       return db.getRedactions()
-          .then((redactions) => {
-            expect(redactions).to.eql([]);
-          });
+          .then((redactions) =>
+            expect(redactions).to.eql([]));
     });
   });
 });
