@@ -4,6 +4,7 @@ const packageJson = require('./package');
 const semver = require('semver');
 const promisify = require('es6-promisify');
 const _ = require('lodash');
+const co = require('co');
 
 /* istanbul ignore if */
 if (!semver.satisfies(process.version, packageJson.engines.node)) {
@@ -42,31 +43,29 @@ class PileClient {
   }
 
   putData(key, value) {
-    return this.promiseRedisClient.SETNX(this.dataKey(key), value)
-        .then((keyWasSet) => {
-          if (!keyWasSet) {
-            throw new AlreadySetError(key);
-          }
-        });
+    return co(function *() {
+      const keyWasSet = yield this.promiseRedisClient.SETNX(this.dataKey(key), value);
+      if (!keyWasSet) {
+        throw new AlreadySetError(key);
+      }
+    }.bind(this));
   }
 
   getData(key) {
-    return this.promiseRedisClient.GET(this.dataKey(key))
-        .then((value) => {
-          return _.find([
-            value,
-            this.getRedactions()
-                .then((redactions) => {
-                  const foundRedaction = _.find(redactions, {
-                    key
-                  });
-                  if (foundRedaction) {
-                    throw new RedactedDataError(foundRedaction);
-                  }
-                  throw new NotFoundError(key);
-                })
-          ]);
-        });
+    return co(function *() {
+      const value = yield this.promiseRedisClient.GET(this.dataKey(key));
+      if (value) {
+        return value;
+      }
+      const redactions = yield this.getRedactions();
+      const foundRedaction = _.find(redactions, {
+        key
+      });
+      if (foundRedaction) {
+        throw new RedactedDataError(foundRedaction);
+      }
+      throw new NotFoundError(key);
+    }.bind(this));
   }
 
   addReference(name, key) {
@@ -74,13 +73,15 @@ class PileClient {
   }
 
   getLastReference(name) {
-    return this.promiseRedisClient.LRANGE(this.referenceKey(name), -1, -1)
-        .then((latest) => {
-          if (!latest || _.isEmpty(latest)) {
-            throw new NotFoundError(name);
-          }
-          return _.first(latest);
-        });
+    return co(this.getLastReference2(name));
+  }
+
+  *getLastReference2(name) {
+    const latest = yield this.promiseRedisClient.LRANGE(this.referenceKey(name), -1, -1);
+    if (!latest || _.isEmpty(latest)) {
+      throw new NotFoundError(name);
+    }
+    return _.first(latest);
   }
 
   getReferenceHistory(name) {
@@ -88,27 +89,25 @@ class PileClient {
   }
 
   redactData(key, reason) {
-    return this.promiseRedisClient.EXISTS(this.dataKey(key))
-        .then((keyExists) => {
-          if (!keyExists) {
-            throw new NotFoundError(key);
-          }
+    return co(function *() {
+      const keyExists = yield this.promiseRedisClient.EXISTS(this.dataKey(key));
+      if (!keyExists) {
+        throw new NotFoundError(key);
+      }
 
-          const redactionLog = {
-            key,
-            reason
-          };
-          return this.promiseRedisClient.RPUSH(this.redactionKey(), redactionLog)
-              .catch((err) => {
-                throw new Error(`failed to log redaction, data not deleted: ${err.message}`);
-              });
-        })
-        .then(() => {
-          return this.promiseRedisClient.DEL(this.dataKey(key))
-              .catch((err) => {
-                throw new Error(`failed to delete redacted data.  left dirty redaction log: ${err.message}`);
-              });
+      const redactionLog = {
+        key,
+        reason
+      };
+      yield this.promiseRedisClient.RPUSH(this.redactionKey(), redactionLog)
+        .catch((err) => {
+          throw new Error(`failed to log redaction, data not deleted: ${err.message}`);
         });
+      yield this.promiseRedisClient.DEL(this.dataKey(key))
+        .catch((err) => {
+          throw new Error(`failed to delete redacted data.  left dirty redaction log: ${err.message}`);
+        });
+    }.bind(this));
   }
 
   getRedactions() {
