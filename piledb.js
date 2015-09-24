@@ -1,8 +1,8 @@
 'use strict';
 
 const packageJson = require('./package');
+const promisifyRedisClient = require('./library/promisifyRedisClient');
 const semver = require('semver');
-const promisify = require('es6-promisify');
 const _ = require('lodash');
 const co = require('co');
 
@@ -18,16 +18,7 @@ class PileClient {
 
   constructor(redisClient, namespace) {
     this.namespace = namespace || 'piledb';
-    const methods = [
-      'SETNX',
-      'GET',
-      'RPUSH',
-      'LRANGE',
-      'EXISTS',
-      'DEL'
-    ];
-    this.promiseRedisClient = _.zipObject(methods, _.map(methods, (method) =>
-        promisify(redisClient[method].bind(redisClient))));
+    this.promiseRedisClient = promisifyRedisClient(redisClient);
   }
 
   dataKey(key) {
@@ -73,15 +64,13 @@ class PileClient {
   }
 
   getLastReference(name) {
-    return co(this.getLastReference2(name));
-  }
-
-  *getLastReference2(name) {
-    const latest = yield this.promiseRedisClient.LRANGE(this.referenceKey(name), -1, -1);
-    if (!latest || _.isEmpty(latest)) {
-      throw new NotFoundError(name);
-    }
-    return _.first(latest);
+    return co(function *() {
+      const latest = yield this.promiseRedisClient.LRANGE(this.referenceKey(name), -1, -1);
+      if (!latest || _.isEmpty(latest)) {
+        throw new NotFoundError(name);
+      }
+      return _.first(latest);
+    }.bind(this));
   }
 
   getReferenceHistory(name) {

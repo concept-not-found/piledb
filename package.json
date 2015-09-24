@@ -9,7 +9,7 @@
   },
   "main": "piledb.js",
   "scripts": {
-    "test": "./node_modules/.bin/istanbul cover ./node_modules/.bin/_mocha -- --reporter spec --recursive"
+    "test": "./node_modules/.bin/_mocha --reporter spec --recursive"
   },
   "dependencies": {
     "co": "^4.6.0",
@@ -20,8 +20,8 @@
   "devDependencies": {
     "async": "^1.4.2",
     "chai": "^3.2.0",
-    "istanbul": "^0.3.20",
-    "mocha": "^2.3.2",
+    "co-mocha": "^1.1.2",
+    "mocha": "^2.3.3",
     "redis": "^1.0.0"
   }
 }
