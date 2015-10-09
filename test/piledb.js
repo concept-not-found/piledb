@@ -5,6 +5,8 @@ const AlreadySetError = require('../piledb').AlreadySetError;
 const NotFoundError = require('../piledb').NotFoundError;
 const RedactedDataError = require('../piledb').RedactedDataError;
 const FakeRedis = require('../fake/redis');
+
+require('co-mocha');
 const expect = require('chai').expect;
 
 describe('pile client', () => {
